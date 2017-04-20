@@ -22,9 +22,14 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  */
 @Path("/")
 public class RegistryServices{
-		private final Logger log = Logger.getLogger(RegistryServices.class);
+		private static final Logger log = Logger.getLogger(RegistryServices.class);
 
 		private ConcurrentMap<String, List<Rule>> deviceTopics = new ConcurrentHashMap<>();
+
+		static{
+				System.out.println("RegistryServices static initializer marker");
+				log.info("RegistryServices static initializer marker");
+		}
 
 		@GET
 		@Path("/getListeners/{device_id}")

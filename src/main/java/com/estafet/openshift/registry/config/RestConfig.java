@@ -15,6 +15,7 @@ public class RestConfig extends Application {
 		@Path("/")
 		@Produces(APPLICATION_JSON)
 		public String hello() {
+				System.out.println("RestConfig hello method called");
 				return "Welcome to IoT registry!";
 		}
 
