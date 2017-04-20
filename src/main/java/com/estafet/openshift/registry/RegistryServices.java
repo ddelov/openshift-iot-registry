@@ -26,11 +26,18 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 /**
  * Created by Delcho Delov on 19.04.17.
  */
-@Path("/registry")
+@Path("/")
 public class RegistryServices{
 		private static final Logger log = Logger.getLogger(RegistryServices.class);
 
 		protected static ConcurrentMap<String, List<String>> deviceTopics = new ConcurrentHashMap<>();
+
+		@GET
+		@Path("/")
+		@Produces(APPLICATION_JSON)
+		public String hello() {
+				return "Welcome to AWS IoT bench project migration on OpenShift!";
+		}
 
 		@GET
 		@Path("/get/{device_id}")
