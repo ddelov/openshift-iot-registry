@@ -42,10 +42,6 @@ public class RegistryServices{
 				return Response.status(HttpServletResponse.SC_OK).entity(rules).build();
 		}
 
-		//================ for device manager ===========================
-//		public void deleteDevice(String deviceId){
-//				deviceTopics.remove(deviceId);
-//		}
 		@POST
 		@Path("/registerDevice/{device_id}")
 		@Consumes(MediaType.APPLICATION_JSON)
