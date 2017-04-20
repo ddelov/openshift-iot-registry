@@ -27,13 +27,6 @@ public class RegistryServices{
 		private ConcurrentMap<String, List<Rule>> deviceTopics = new ConcurrentHashMap<>();
 
 		@GET
-		@Path("/")
-		@Produces(APPLICATION_JSON)
-		public String hello() {
-				return "Welcome to IoT registry!";
-		}
-
-		@GET
 		@Path("/getListeners/{device_id}")
 		@Produces(APPLICATION_JSON)
 		public Response getListeners(@PathParam("device_id")String deviceId) {
