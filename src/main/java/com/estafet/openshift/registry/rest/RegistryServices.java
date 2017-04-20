@@ -20,11 +20,19 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 /**
  * Created by Delcho Delov on 19.04.17.
  */
-@Path("/registry")
+@Path("/")
 public class RegistryServices{
 		private final Logger log = Logger.getLogger(RegistryServices.class);
 
 		private ConcurrentMap<String, List<Rule>> deviceTopics = new ConcurrentHashMap<>();
+
+		@GET
+		@Path("/")
+		@Produces(APPLICATION_JSON)
+		public String hello() {
+				return "Welcome to IoT registry!";
+		}
+
 		@GET
 		@Path("/getListeners/{device_id}")
 		@Produces(APPLICATION_JSON)
