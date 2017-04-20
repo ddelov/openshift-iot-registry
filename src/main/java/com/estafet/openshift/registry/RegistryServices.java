@@ -1,20 +1,13 @@
 package com.estafet.openshift.registry;
 
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import com.estafet.openshift.dm.util.Utils;
 import org.apache.log4j.Logger;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,18 +19,11 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 /**
  * Created by Delcho Delov on 19.04.17.
  */
-@Path("/")
+@Path("/registry")
 public class RegistryServices{
-		private static final Logger log = Logger.getLogger(RegistryServices.class);
+		private final Logger log = Logger.getLogger(RegistryServices.class);
 
 		protected static ConcurrentMap<String, List<String>> deviceTopics = new ConcurrentHashMap<>();
-
-		@GET
-		@Path("/")
-		@Produces(APPLICATION_JSON)
-		public String hello() {
-				return "Welcome to AWS IoT bench project migration on OpenShift!";
-		}
 
 		@GET
 		@Path("/get/{device_id}")
@@ -86,7 +72,7 @@ public class RegistryServices{
 				for (String endpoint : topicListeners) {
 						log.debug("Sending notification to "+ endpoint);
 						try {
-								final int code = makePostJsonRequest(endpoint, jsonState);
+								final int code = Utils.makePostJsonRequest(endpoint, jsonState);
 								res.add(code);
 						} catch (IOException e) {
 								log.error(e.getMessage(), e);
@@ -128,21 +114,6 @@ public class RegistryServices{
 				}
 				final String message = found?"Rule unregistered":"Rule is not found";
 				return Response.status(HttpServletResponse.SC_OK).entity(message).build();
-		}
-		private int makePostJsonRequest(String url, String jsonString) throws IOException {
-				log.debug("makePostJsonRequest to ("+url);
-				CloseableHttpClient httpClient = HttpClients.createDefault();
-				HttpPost httpPost = new HttpPost(url);
-				StringEntity inputMappings = new StringEntity(jsonString, ContentType.APPLICATION_JSON);
-				httpPost.setEntity(inputMappings);
-				httpPost.setHeader("Content-type", "application/json");
-				log.debug("payload(JSON): "+ jsonString);
-				CloseableHttpResponse response = httpClient.execute(httpPost);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(
-								response.getEntity().getContent()));
-				String line = rd.readLine();
-				log.debug("response line" + line);
-				return response.getStatusLine().getStatusCode();
 		}
 
 }
