@@ -42,7 +42,6 @@ public class RegistryServices{
 				return Response.status(HttpServletResponse.SC_OK).entity(rules).build();
 		}
 
-
 		@POST
 		@Path("/registerDevice/{device_id}")
 		@Consumes(MediaType.APPLICATION_JSON)
