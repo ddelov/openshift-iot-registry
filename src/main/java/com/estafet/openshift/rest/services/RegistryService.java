@@ -1,29 +1,33 @@
 package com.estafet.openshift.rest.services;
 
-import com.estafet.openshift.dm.util.Utils;
+import com.estafet.openshift.config.Constants;
+import com.estafet.openshift.model.exception.EmptyArgumentException;
+import com.estafet.openshift.util.PersistenceProvider;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.apache.log4j.Logger;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * Created by Delcho Delov on 19.04.17.
+ *
  */
 @Path("/")
 public class RegistryService {
 		private final Logger log = Logger.getLogger(RegistryService.class);
 
-		protected static ConcurrentMap<String, List<String>> deviceTopics = new ConcurrentHashMap<>();
+		protected static final Set<String> devices = new HashSet<>();
 
 		//================ for monitoring purposes ======================
 		@GET
@@ -34,20 +38,41 @@ public class RegistryService {
 		}
 
 		@GET
-		@Path("/getListeners/{device_id}")
+		@Path("/count")
 		@Produces(APPLICATION_JSON)
 		public Response getListeners(@PathParam("device_id")String deviceId) {
 				log.debug(">> RegistryService.getListeners("+deviceId+")");
-				final List<String> rules = deviceTopics.get(deviceId);
-				return Response.status(HttpServletResponse.SC_OK).entity(rules).build();
+				final int count = devices.size();
+				String message = "At the moment there is no registered devices";
+				if(count==1){
+						message = "At the moment there is 1 registered device";
+				}else if (count>1){
+						message = "At the moment there are "+count+" registered devices";
+				}
+				return Response.status(HttpServletResponse.SC_OK).entity(message).build();
 		}
 
 		//================ for device manager ===========================
-		private void registerDevice(String deviceId) {
-				log.debug(">> RegistryService.registerDevice("+deviceId+ ")");
-				final List<String> previous = deviceTopics.putIfAbsent(deviceId, new LinkedList<String>());
-				log.debug("Until now : "+(previous==null?0:previous.size()));
+		@PUT
+		@Path("/register/{device_id}")
+		@Consumes(MediaType.APPLICATION_JSON)
+		@Produces(MediaType.APPLICATION_JSON)
+		public Response register(@PathParam("device_id")String deviceId) {
+				log.debug(">> RegistryService.register("+deviceId+ ")");
+				devices.add(deviceId);
+				return Response.status(HttpServletResponse.SC_OK).entity("Device registered").build();
 		}
+
+		@DELETE
+		@Path("/delete/{thing_name}")
+		@Consumes(MediaType.APPLICATION_JSON)
+		@Produces(MediaType.APPLICATION_JSON)
+		public Response delete(@PathParam("device_id")String deviceId) {
+				log.debug(">> RegistryService.delete("+deviceId+ ")");
+				devices.remove(deviceId);
+				return Response.status(HttpServletResponse.SC_OK).entity("Device unregistered").build();
+		}
+
 		//================ for simulator interaction ====================
 		@POST
 		@Path("/send/{device_id}")
@@ -55,60 +80,36 @@ public class RegistryService {
 		@Produces(MediaType.APPLICATION_JSON)
 		public Response send(@PathParam("device_id")String deviceId, String jsonState) {
 				log.debug(">> RegistryService.send("+deviceId+ ", "+ jsonState +")");
-				final List<Integer> retCodeList = sendStatePrv(deviceId, jsonState);
-				return Response.status(HttpServletResponse.SC_OK).entity(retCodeList).build();
-		}
-		//================ for rules/listeners interaction ==============
-		@POST
-		@Path("/registerRule/{device_id}")
-		@Consumes(MediaType.APPLICATION_JSON)
-		@Produces(MediaType.APPLICATION_JSON)
-		public Response registerRule(@PathParam("device_id")String deviceId, String ruleEndpoint) {
-				log.debug(">> RegistryService.registerRule("+deviceId+ ", "+ ruleEndpoint +")");
-				registerDevice(deviceId);
-				deviceTopics.get(deviceId).add(ruleEndpoint);
-				return Response.status(HttpServletResponse.SC_OK).entity("Rule registered").build();
-		}
-
-		@DELETE
-		@Path("/deleteRule/{thing_name}")
-		@Consumes(MediaType.APPLICATION_JSON)
-		@Produces(MediaType.APPLICATION_JSON)
-		public Response deleteRule(@PathParam("device_id")String deviceId, String ruleEndpoint) {
-				log.debug(">> RegistryService.deleteRule("+deviceId+ ", "+ ruleEndpoint +")");
-				final List<String> listeners = deviceTopics.get(deviceId);
-				final Iterator<String> iterator = listeners.iterator();
-				boolean found = false;
-				while(iterator.hasNext()){
-						final String listener = iterator.next();
-						if(listener.equals(ruleEndpoint)){
-								iterator.remove();
-								found=true;
-								break;
-						}
+				if(!devices.contains(deviceId)){
+						log.warn("Unregistered device");
+						return Response.status(HttpServletResponse.SC_BAD_REQUEST).entity("Unregistered device").build();
 				}
-				final String message = found?"Rule unregistered":"Rule is not found";
-				return Response.status(HttpServletResponse.SC_OK).entity(message).build();
-		}
-
-
-		private List<Integer> sendStatePrv(String deviceId, String jsonState){
-				registerDevice(deviceId);//harmless method
-				final List<String> topicListeners = deviceTopics.get(deviceId);
-				log.debug("found "+ topicListeners.size() + " listeners");
-				List<Integer> res = new LinkedList<>();
-				for (String endpoint : topicListeners) {
-						log.debug("Sending notification to "+ endpoint);
-						try {
-								final int code = Utils.makePostJsonRequest(endpoint, jsonState);
-								res.add(code);
-						} catch (IOException e) {
+				Gson gson = new GsonBuilder().create();
+				Map<String, Object> reportedState = gson.fromJson(jsonState, Map.class);
+				Double pressure = (Double) reportedState.get(Constants.COL_PRESSURE);
+				log.debug("pressure "+pressure);
+				if (pressure > Constants.MAX_PRESSURE) {
+						String thingName = (String) reportedState.get(Constants.COL_THING_NAME);
+						long tstamp = (Long) reportedState.get(Constants.COL_TSTAMP);
+						final PersistenceProvider dao = getPersistenceProvider();
+						try (Connection conn = dao.getCon()) {
+								try {
+										dao.writeLeaksData(thingName, pressure, tstamp, conn);
+										conn.commit();
+								} catch (EmptyArgumentException e) {
+										conn.rollback();
+										log.error(e.getMessage(), e);
+										return Response.status(HttpServletResponse.SC_BAD_REQUEST).entity(e.getMessage()).build();
+								}
+						} catch (SQLException e) {
 								log.error(e.getMessage(), e);
-								res.add(-1);
+								return Response.status(HttpServletResponse.SC_BAD_REQUEST).entity("Could not open DB connection").build();
 						}
 				}
-				return res;
+				return Response.status(HttpServletResponse.SC_OK).build();
 		}
-
-
+		//for test/mock purposes only
+		protected PersistenceProvider getPersistenceProvider() {
+				return new PersistenceProvider();
+		}
 }
