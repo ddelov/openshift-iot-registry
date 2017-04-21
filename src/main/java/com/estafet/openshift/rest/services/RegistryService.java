@@ -40,8 +40,8 @@ public class RegistryService {
 		@GET
 		@Path("/count")
 		@Produces(APPLICATION_JSON)
-		public Response getListeners(@PathParam("device_id")String deviceId) {
-				log.debug(">> RegistryService.getListeners("+deviceId+")");
+		public Response count() {
+				log.debug(">> RegistryService.count()");
 				final int count = devices.size();
 				String message = "At the moment there is no registered devices";
 				if(count==1){
@@ -64,7 +64,7 @@ public class RegistryService {
 		}
 
 		@DELETE
-		@Path("/delete/{thing_name}")
+		@Path("/delete/{device_id}")
 		@Consumes(MediaType.APPLICATION_JSON)
 		@Produces(MediaType.APPLICATION_JSON)
 		public Response delete(@PathParam("device_id")String deviceId) {
