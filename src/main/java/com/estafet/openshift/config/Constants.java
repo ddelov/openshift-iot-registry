@@ -19,5 +19,5 @@ public interface Constants {
 		String COL_THING_NAME = "thing_name";//string
 		String COL_PRESSURE = "pressure";//double
 		String COL_TSTAMP = "tstamp";//long
-
+		String EMPTY_JSON = "{}";
 }

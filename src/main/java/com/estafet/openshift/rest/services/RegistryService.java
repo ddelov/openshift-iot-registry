@@ -13,11 +13,13 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
+import static com.estafet.openshift.config.Constants.EMPTY_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.apache.http.util.TextUtils.isEmpty;
 
 /**
  * Created by Delcho Delov on 19.04.17.
@@ -27,11 +29,11 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public class RegistryService {
 		private final Logger log = Logger.getLogger(RegistryService.class);
 
-		protected static final Set<String> devices = new HashSet<>();
+		//contains device_id and it latest reported state(if any)
+		protected static final ConcurrentMap<String, String> devices = new ConcurrentHashMap<>();
 
 		//================ for monitoring purposes ======================
 		@GET
-		@Path("/")
 		@Produces(APPLICATION_JSON)
 		public String hello() {
 				return "Welcome to OpenShift, Mr. Delov!";
@@ -52,6 +54,18 @@ public class RegistryService {
 				return Response.status(HttpServletResponse.SC_OK).entity(message).build();
 		}
 
+		@GET
+		@Path("/state/{device_id}")
+		@Produces(APPLICATION_JSON)
+		public Response getState(@PathParam("device_id")String deviceId) {
+				log.debug(">> RegistryService.getState()");
+				final String reported = devices.get(deviceId);
+				if(isEmpty(reported)){
+						return Response.status(HttpServletResponse.SC_BAD_REQUEST).entity("Device not found").build();
+				}
+				return Response.status(HttpServletResponse.SC_OK).entity(reported).build();
+		}
+
 		//================ for device manager ===========================
 		@PUT
 		@Path("/register/{device_id}")
@@ -59,7 +73,10 @@ public class RegistryService {
 		@Produces(MediaType.APPLICATION_JSON)
 		public Response register(@PathParam("device_id")String deviceId) {
 				log.debug(">> RegistryService.register("+deviceId+ ")");
-				devices.add(deviceId);
+				final String prevState = devices.putIfAbsent(deviceId, EMPTY_JSON);
+				if(prevState!=null){
+						return Response.status(HttpServletResponse.SC_OK).entity("Device is registered already").build();
+				}
 				return Response.status(HttpServletResponse.SC_OK).entity("Device registered").build();
 		}
 
@@ -69,7 +86,10 @@ public class RegistryService {
 		@Produces(MediaType.APPLICATION_JSON)
 		public Response delete(@PathParam("device_id")String deviceId) {
 				log.debug(">> RegistryService.delete("+deviceId+ ")");
-				devices.remove(deviceId);
+				final String remove = devices.remove(deviceId);
+				if(isEmpty(remove)){
+						return Response.status(HttpServletResponse.SC_OK).entity("Device not found").build();
+				}
 				return Response.status(HttpServletResponse.SC_OK).entity("Device unregistered").build();
 		}
 
@@ -80,9 +100,10 @@ public class RegistryService {
 		@Produces(MediaType.APPLICATION_JSON)
 		public Response send(@PathParam("device_id")String deviceId, String jsonState) {
 				log.debug(">> RegistryService.send("+deviceId+ ", "+ jsonState +")");
-				if(!devices.contains(deviceId)){
-						log.warn("Unregistered device");
-						return Response.status(HttpServletResponse.SC_BAD_REQUEST).entity("Unregistered device").build();
+				final String prevState = devices.replace(deviceId, jsonState);
+				if(prevState==null){
+						log.warn("Device not found");
+						return Response.status(HttpServletResponse.SC_BAD_REQUEST).entity("Device not found").build();
 				}
 				Gson gson = new GsonBuilder().create();
 				Map<String, Object> reportedState = gson.fromJson(jsonState, Map.class);
