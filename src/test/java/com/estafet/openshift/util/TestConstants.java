@@ -6,7 +6,8 @@ package com.estafet.openshift.util;
  */
 public class TestConstants {
 		public static final String TEST_DEVICE_ID = "sub12334";
-		public static final Double TEST_PRESSURE = 345.5;
+		public static final Double TEST_PRESSURE_LOW = 35.0975;
+		public static final Double TEST_PRESSURE_HI = 87.2076554;
 		public static final	long TEST_STAMP = 1234567890;
 		public static final int TEST_ID = 1024;
 		public static final String TEST_MAIL = "forget@about.it";

@@ -61,6 +61,7 @@ public class RegistryService {
 		public Response getState(@PathParam("device_id")String deviceId) {
 				log.debug(">> RegistryService.getState()");
 				final String reported = devices.get(deviceId);
+				log.debug("reported = " +reported);
 				if(isEmpty(reported)){
 						return Response.status(HttpServletResponse.SC_BAD_REQUEST).entity("Device not found").build();
 				}
@@ -103,7 +104,7 @@ public class RegistryService {
 				log.debug(">> RegistryService.send("+ jsonState +")");
 				Gson gson = new GsonBuilder().create();
 				Map<String, Object> reportedState = gson.fromJson(jsonState, Map.class);
-				String thingName = (String) reportedState.get(Constants.COL_THING_NAME);
+				String thingName = (String) reportedState.get(Constants.THING_NAME);
 				final String prevState = devices.replace(thingName, jsonState);
 				if(prevState==null){
 						log.warn("Device not found");

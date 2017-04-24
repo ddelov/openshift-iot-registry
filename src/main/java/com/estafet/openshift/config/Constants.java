@@ -20,4 +20,6 @@ public interface Constants {
 		String COL_PRESSURE = "pressure";//double
 		String COL_TSTAMP = "tstamp";//long
 		String EMPTY_JSON = "{}";
+
+		String THING_NAME = "thingName";
 }

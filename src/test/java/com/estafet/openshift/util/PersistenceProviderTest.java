@@ -41,7 +41,7 @@ public class PersistenceProviderTest {
 
 		@Test(expected = EmptyArgumentException.class)
 		public void writeLeaksDataEmptyConnection() throws Exception {
-				providerMock.writeLeaksData(TEST_DEVICE_ID, TEST_PRESSURE, TEST_STAMP, null);
+				providerMock.writeLeaksData(TEST_DEVICE_ID, TEST_PRESSURE_LOW, TEST_STAMP, null);
 		}
 		@Test(expected = EmptyArgumentException.class)
 		public void writeLeaksDataEmptyArgumentException() throws Exception {
@@ -52,7 +52,7 @@ public class PersistenceProviderTest {
 				when(connectionMock.prepareStatement(any(String.class))).thenReturn(preparedStatementMock);
 				when(preparedStatementMock.executeUpdate()).thenReturn(1);
 				try {
-						providerMock.writeLeaksData(TEST_DEVICE_ID, TEST_PRESSURE, TEST_STAMP, connectionMock);
+						providerMock.writeLeaksData(TEST_DEVICE_ID, TEST_PRESSURE_LOW, TEST_STAMP, connectionMock);
 				}catch (EmptyArgumentException|SQLException e){
 						fail();
 				}
