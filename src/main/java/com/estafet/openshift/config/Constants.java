@@ -5,7 +5,7 @@ package com.estafet.openshift.config;
  *
  */
 public interface Constants {
-		double MAX_PRESSURE = 55.0;
+		double MAX_PRESSURE = 35.0;//simulator generates between 1 and 51
 
 		String SCHEMA_NAME = "openshift";
 		String TABLE_NAME_LEAKS_DATA = "leaks_data";
