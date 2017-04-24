@@ -129,6 +129,7 @@ public class RegistryService {
 				}
 				return Response.status(HttpServletResponse.SC_OK).build();
 		}
+
 		//for test/mock purposes only
 		protected PersistenceProvider getPersistenceProvider() {
 				return new PersistenceProvider();
