@@ -3,7 +3,6 @@ package com.estafet.openshift.rest.services;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -51,7 +50,6 @@ public class RegistryServiceTest {
 		public void delete() throws Exception {
 		}
 
-		@Ignore
 		@Test
 		public void send() throws Exception {
 				final Response registerResponse = service.register(TEST_DEVICE_ID);
@@ -62,6 +60,8 @@ public class RegistryServiceTest {
 				payloadMap.put(COL_PRESSURE, TEST_PRESSURE_LOW);
 				Gson gson = new GsonBuilder().create();
 
+//				String T_PAYLOAD = "{\"thinName\":\"Pod3\", \"pressure\":23.1245}";
+//				final Response sendResponse = service.send(T_PAYLOAD);
 				final Response sendResponse = service.send(gson.toJson(payloadMap));
 				assertThat(sendResponse.getStatus(), is(SC_OK));
 		}
