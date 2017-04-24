@@ -13,6 +13,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -95,23 +96,23 @@ public class RegistryService {
 
 		//================ for simulator interaction ====================
 		@POST
-		@Path("/send/{device_id}")
+		@Path("/send")
 		@Consumes(MediaType.APPLICATION_JSON)
 		@Produces(MediaType.APPLICATION_JSON)
-		public Response send(@PathParam("device_id")String deviceId, String jsonState) {
-				log.debug(">> RegistryService.send("+deviceId+ ", "+ jsonState +")");
-				final String prevState = devices.replace(deviceId, jsonState);
+		public Response send(String jsonState) {
+				log.debug(">> RegistryService.send("+ jsonState +")");
+				Gson gson = new GsonBuilder().create();
+				Map<String, Object> reportedState = gson.fromJson(jsonState, Map.class);
+				String thingName = (String) reportedState.get(Constants.COL_THING_NAME);
+				final String prevState = devices.replace(thingName, jsonState);
 				if(prevState==null){
 						log.warn("Device not found");
 						return Response.status(HttpServletResponse.SC_BAD_REQUEST).entity("Device not found").build();
 				}
-				Gson gson = new GsonBuilder().create();
-				Map<String, Object> reportedState = gson.fromJson(jsonState, Map.class);
 				Double pressure = (Double) reportedState.get(Constants.COL_PRESSURE);
 				log.debug("pressure "+pressure);
 				if (pressure > Constants.MAX_PRESSURE) {
-						String thingName = (String) reportedState.get(Constants.COL_THING_NAME);
-						long tstamp = (Long) reportedState.get(Constants.COL_TSTAMP);
+						long tstamp = Calendar.getInstance().getTimeInMillis();
 						final PersistenceProvider dao = getPersistenceProvider();
 						try (Connection conn = dao.getCon()) {
 								try {
