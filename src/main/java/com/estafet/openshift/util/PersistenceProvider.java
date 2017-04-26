@@ -5,10 +5,13 @@ import com.estafet.openshift.config.Queries;
 import com.estafet.openshift.model.exception.EmptyArgumentException;
 import org.apache.log4j.Logger;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.LinkedList;
+import java.util.List;
+
+import static com.estafet.openshift.config.Constants.DATE_PATTERN;
 
 /**
  * Created by Delcho Delov on 04.04.17.
@@ -70,5 +73,31 @@ public class PersistenceProvider {
 				log.debug("Affected rows: " + i);
 				log.debug("<< writeLeaksData()");
 		}
-
+		public static List<String> loadInitialStateFromTheDB(){
+				log.debug(">> loadInitialStateFromTheDB()");
+				Calendar today = Calendar.getInstance();
+				today.set(Calendar.HOUR_OF_DAY, 0);
+				today.set(Calendar.MINUTE, 0);
+				today.set(Calendar.SECOND, 0);
+				today.set(Calendar.MILLISECOND, 0);
+				final SimpleDateFormat sdf = new SimpleDateFormat(DATE_PATTERN);
+				sdf.setTimeZone(today.getTimeZone());
+				final String now = sdf.format(today.getTime());
+				final List<String> activeDevices = new LinkedList<>();
+				try(final Connection connection = DriverManager.getConnection(Constants.CONNECTION_URL, Constants.USERNAME, Constants.PASSWORD)){
+						PreparedStatement ps = connection.prepareStatement(Queries.SQL_LOAD_ACTIVE_DEVICES);
+						ps.setString(1, now);
+						ps.setString(2, now);
+						final ResultSet resultSet = ps.executeQuery();
+						while (resultSet.next()) {
+								final String thingName = resultSet.getString(1);
+								activeDevices.add(thingName);
+								log.debug("Added "+thingName + " to the devices map");
+						}
+				} catch (SQLException e) {
+						log.error(e.getMessage());
+				}finally {
+						return activeDevices;
+				}
+		}
 }

@@ -14,11 +14,13 @@ import javax.ws.rs.core.Response;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static com.estafet.openshift.config.Constants.EMPTY_JSON;
+import static com.estafet.openshift.util.PersistenceProvider.loadInitialStateFromTheDB;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.apache.http.util.TextUtils.isEmpty;
 
@@ -31,7 +33,15 @@ public class RegistryService {
 		private final Logger log = Logger.getLogger(RegistryService.class);
 
 		//contains device_id and it latest reported state(if any)
-		protected static final ConcurrentMap<String, String> devices = new ConcurrentHashMap<>();
+		protected static final ConcurrentMap<String, String> devices;
+
+		static{
+				final List<String> activeDevices = loadInitialStateFromTheDB();
+				devices = new ConcurrentHashMap<>(activeDevices.size());
+				for (String thingName : activeDevices) {
+						devices.put(thingName, EMPTY_JSON);
+				}
+		}
 
 		//================ for monitoring purposes ======================
 		@GET

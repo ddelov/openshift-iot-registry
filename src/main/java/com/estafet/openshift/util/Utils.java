@@ -5,6 +5,7 @@ package com.estafet.openshift.util;
  *
  */
 class Utils {
+
 		public static boolean isEmpty(String val) {
 				return val == null || val.trim().isEmpty();
 		}
